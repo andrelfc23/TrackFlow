@@ -1,0 +1,9 @@
+namespace TrackFlow.Api.Spotify;
+
+internal sealed class SpotifyOptions
+{
+    public string? ClientId { get; set; }
+    public string? ClientSecret { get; set; }
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(ClientId)
+        && !string.IsNullOrWhiteSpace(ClientSecret);
+}

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="TrackFlow.Api.Tests/TrackFlow.Api.Tests.csproj" />
+  <Project Path="TrackFlow.Api/TrackFlow.Api.csproj" />
+</Solution>
