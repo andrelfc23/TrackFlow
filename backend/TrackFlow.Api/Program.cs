@@ -1,3 +1,4 @@
+using TrackFlow.Api.Spotify;
 using TrackFlow.Api.Auth;
 using TrackFlow.Api.Configuration;
 
@@ -13,6 +14,7 @@ app.UseAuthorization();
 app.MapOpenApi();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapAuthEndpoints();
+app.MapMusicEndpoints();
 app.Run();
 
 // Expose the entry point to the integration test host.

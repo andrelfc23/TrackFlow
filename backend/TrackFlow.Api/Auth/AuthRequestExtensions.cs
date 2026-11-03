@@ -11,7 +11,7 @@ internal static class AuthRequestExtensions
 
         app.Use(async (context, next) =>
         {
-            if (context.Request.Path.StartsWithSegments("/api/auth"))
+            if ((context.Request.Path.StartsWithSegments("/api/auth") || context.Request.Path.StartsWithSegments("/api/music")))
             {
                 context.Response.Headers.CacheControl = "no-store";
                 // Vite forwards the original host. Keep OAuth redirects on the registered, fixed origin.

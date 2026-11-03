@@ -61,3 +61,26 @@ Starta om Vite om den redan kördes före proxyändringen. Öppna **http://127.0
 - Backend binder bara till loopback. Denna implementation stoppar avsiktligt i produktionsläge tills HTTPS, domäner, beständig nyckelhantering och produktionshemligheter har konfigurerats.
 
 Officiella källor: [Authorization Code](https://developer.spotify.com/documentation/web-api/tutorials/code-flow), [Redirect URI](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri).
+
+## Riktig rockmusik och uppspelning
+
+Den nya musikvyn söker genre:rock year:1990-2026, tio resultat åt gången.
+Detta är sökresultat, inte en fullständig katalog eller en sparad Spotify-spellista.
+
+1. Starta om backend och frontend efter uppdateringen.
+2. Logga ut och logga in igen. Godkänn de nya behörigheterna för streaming och uppspelning.
+3. Klicka Hämta rocklåtar, sedan Anslut spelaren. Vänta tills spelaren är ansluten.
+4. Klicka Spela på en låt. Ladda fler hämtar nästa sida.
+5. Premium och tillåtelse att använda utvecklarappen krävs. Web Playback SDK ska vara valt i appens Spotify-inställningar. Callback-adressen är oförändrad.
+
+Säkerhetsändring: endast en kortlivad access token lämnas till Spotify SDK i
+webbläsarens minne via POST /api/music/token. Den sparas inte i localStorage.
+Refresh token och ClientSecret stannar i backend. Token- och play-endpoints
+kräver lokal inloggning och antiforgery-token och svaren har no-store.
+Backend förnyar tokens när de närmar sig utgång. Gamla sessioner saknar nya
+behörigheter och kräver ny inloggning. Sessioner försvinner vid omstart.
+
+Testerna simulerar Spotify. Verifiera manuellt med Premium: första söksidan,
+Ladda fler, anslutning, låtval, paus/återuppta, position, volym och utloggning.
+Äldre avsnitt om enbart demo, inga tokens till frontend och avsaknad av
+förnyelse beskriver den tidigare versionen och ersätts av detta avsnitt.

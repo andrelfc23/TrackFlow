@@ -1,32 +1,43 @@
-# React + TypeScript + Vite
+# TrackFlow frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React och TypeScript. Koden är organiserad efter funktion och ansvar.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```text
+src/
+  App.tsx                       Startkomponent
+  pages/MusicPage.tsx            Sidlayout och sammansättning
+  api/client.ts                 Gemensamma musikanrop, HTTP-fel och CSRF
+  features/auth/
+    SpotifyAccount.tsx          Kontots gränssnitt
+    useSpotifyAccount.ts        Inloggningsstatus och utloggning
+    sessionEvents.ts            Meddelande om avslutad session
+  features/music/
+    musicApi.ts                 Typade sök-, token- och uppspelningsanrop
+    useTrackSearch.ts           Låtlista, sidindelning och söktillstånd
+    useSpotifyPlayer.ts         SDK-livscykel och uppspelningskontroller
+    spotifySdk.ts               Laddar Spotifys externa SDK en gång
+    types.ts                    Musik- och SDK-typer
+    TrackList.tsx               Visar låtar och skickar klick vidare
+    PlayerBar.tsx               Visar spelarkontroller
+  utils/formatTime.ts            Formaterar millisekunder
+  App.css                       Befintlig sidstyling
+  index.css                     Globala stilar och Tailwind
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Ansvar och dataflöde
+
+MusicPage kopplar hooks till visuella komponenter via props. TrackList och
+PlayerBar gör inga nätverksanrop och äger inte SDK-instansen. useTrackSearch
+hämtar nästa sida via musicApi och api/client. useSpotifyPlayer äger spelaren,
+dess händelser och städning vid utloggning eller avmontering.
+
+Auth-hooken hanterar status och utloggning och skickar LOGOUT_EVENT efter
+avslutad session. Båda musikhookarna lyssnar och tömmer sitt tillstånd.
+API-adresser, CSRF-skydd och lagring av tokens är oförändrade. Kortlivade
+access tokens används endast i minnet för SDK; hemligheter hör inte hemma här.
+
+## Körning och kontroll
+
+Kör `npm.cmd run dev` i denna mapp och starta backend separat.
+Öppna http://127.0.0.1:5173. Kör `npm.cmd run lint` och `npm.cmd run build`.
+Riktig uppspelning kräver Spotify Premium och rätt behörigheter.

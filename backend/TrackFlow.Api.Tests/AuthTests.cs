@@ -104,6 +104,52 @@ public sealed class AuthTests
         Assert.False(status.GetProperty("authenticated").GetBoolean());
     }
 
+
+    [Fact]
+    public async Task Music_endpoints_require_login()
+    {
+        using var factory = new AuthFactory();
+        using var client = factory.NewClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/music/tracks")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/music/token", new { })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Search_uses_fixed_filter_and_pagination_and_refreshes_expiring_token()
+    {
+        using var factory = new AuthFactory(true);
+        using var client = factory.NewClient();
+        await SignIn(client);
+        var response = await client.GetAsync("/api/music/tracks?offset=10");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var page = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Test Rock", page.GetProperty("items")[0].GetProperty("title").GetString());
+        Assert.Equal(20, page.GetProperty("nextOffset").GetInt32());
+        Assert.Equal(1, factory.Spotify.RefreshCount);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/music/tracks?offset=1001")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Token_and_play_require_csrf_and_forward_only_valid_track()
+    {
+        using var factory = new AuthFactory();
+        using var client = factory.NewClient();
+        await SignIn(client);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/music/token", new { })).StatusCode);
+        var body = new { deviceId = "test-device", uri = "spotify:track:0123456789012345678901" };
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/music/play", body)).StatusCode);
+        var status = await client.GetFromJsonAsync<JsonElement>("/api/auth/status");
+        client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", status.GetProperty("csrfToken").GetString());
+        var tokenResponse = await client.PostAsJsonAsync("/api/music/token", new { });
+        Assert.True(tokenResponse.Headers.CacheControl?.NoStore);
+        var token = await tokenResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("test-access", token.GetProperty("accessToken").GetString());
+        Assert.Single(token.EnumerateObject());
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/music/play", new { deviceId = "test-device", uri = "bad" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/music/play", body)).StatusCode);
+        Assert.Equal(1, factory.Spotify.PlayCount);
+    }
+
     private static async Task<string> SignIn(HttpClient client)
     {
         var login = await client.GetAsync("/api/auth/spotify/login");
@@ -119,8 +165,9 @@ public sealed class AuthTests
 }
 
 // Real OAuth, cookie and antiforgery middleware; only Spotify's HTTP responses are replaced.
-internal sealed class AuthFactory : WebApplicationFactory<Program>
+internal sealed class AuthFactory(bool expireToken = false) : WebApplicationFactory<Program>
 {
+    public FakeSpotifyHandler Spotify { get; } = new(expireToken);
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
@@ -128,7 +175,7 @@ internal sealed class AuthFactory : WebApplicationFactory<Program>
         builder.UseSetting("Spotify:ClientSecret", "integration-test-secret");
         builder.ConfigureServices(services =>
             services.PostConfigure<OAuthOptions>("Spotify", options =>
-                options.Backchannel = new HttpClient(new FakeSpotifyHandler())));
+                options.Backchannel = new HttpClient(Spotify)));
     }
 
     public HttpClient NewClient(bool handleCookies = true) => CreateClient(new()
@@ -139,8 +186,10 @@ internal sealed class AuthFactory : WebApplicationFactory<Program>
     });
 }
 
-internal sealed class FakeSpotifyHandler : HttpMessageHandler
+internal sealed class FakeSpotifyHandler(bool expireToken = false) : HttpMessageHandler
 {
+    public int RefreshCount { get; private set; }
+    public int PlayCount { get; private set; }
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -148,15 +197,39 @@ internal sealed class FakeSpotifyHandler : HttpMessageHandler
         {
             Assert.Equal(HttpMethod.Post, request.Method);
             var form = QueryHelpers.ParseQuery(await request.Content!.ReadAsStringAsync(cancellationToken));
+            if (form["grant_type"] == "refresh_token")
+            {
+                RefreshCount++;
+                Assert.Equal("test-refresh", form["refresh_token"].ToString());
+                return Json("""{"access_token":"refreshed-access","token_type":"Bearer","expires_in":3600}""");
+            }
             Assert.Equal("test-code", form["code"].ToString());
             Assert.False(string.IsNullOrEmpty(form["code_verifier"]));
-            return Json("""{"access_token":"test-access","refresh_token":"test-refresh","token_type":"Bearer","expires_in":3600}""");
+            return Json("""{"access_token":"test-access","refresh_token":"test-refresh","token_type":"Bearer","expires_in":3600}""".Replace("3600", expireToken ? "1" : "3600"));
         }
         if (request.RequestUri.AbsoluteUri == "https://api.spotify.com/v1/me")
         {
             Assert.Equal("Bearer", request.Headers.Authorization?.Scheme);
             Assert.Equal("test-access", request.Headers.Authorization?.Parameter);
             return Json("""{"id":"test-user","display_name":"Test Listener"}""");
+        }
+        if (request.RequestUri.AbsolutePath == "/v1/search")
+        {
+            var query = QueryHelpers.ParseQuery(request.RequestUri.Query);
+            Assert.Equal("genre:rock year:1990-2026", query["q"].ToString());
+            Assert.Equal("10", query["limit"].ToString());
+            Assert.Equal("10", query["offset"].ToString());
+            Assert.Equal("refreshed-access", request.Headers.Authorization?.Parameter);
+            return Json("""{"tracks":{"next":"next-page","items":[{"id":"id","uri":"spotify:track:id","name":"Test Rock","duration_ms":123000,"artists":[{"name":"Artist"}],"album":{"images":[],"release_date":"1995"},"external_urls":{"spotify":"https://open.spotify.com/track/id"}}]}}""");
+        }
+        if (request.RequestUri.AbsolutePath == "/v1/me/player/play")
+        {
+            Assert.Equal(HttpMethod.Put, request.Method);
+            Assert.Equal("test-device", QueryHelpers.ParseQuery(request.RequestUri.Query)["device_id"].ToString());
+            var body = await request.Content!.ReadFromJsonAsync<JsonElement>(cancellationToken);
+            Assert.Equal("spotify:track:0123456789012345678901", body.GetProperty("uris")[0].GetString());
+            PlayCount++;
+            return new HttpResponseMessage(HttpStatusCode.NoContent);
         }
         throw new InvalidOperationException("Unexpected outbound request: " + request.RequestUri);
     }

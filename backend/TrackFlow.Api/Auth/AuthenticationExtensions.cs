@@ -16,6 +16,7 @@ internal static class AuthenticationExtensions
         services.AddMemoryCache();
         services.AddSingleton<SpotifySessionStore>();
         services.AddSingleton<SpotifyClient>();
+        services.AddSingleton<SpotifyMusic>();
         services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
         var auth = services.AddAuthentication(options =>
         {
@@ -53,6 +54,10 @@ internal static class AuthenticationExtensions
                 options.TokenEndpoint = "https://accounts.spotify.com/api/token";
                 options.UserInformationEndpoint = "https://api.spotify.com/v1/me";
                 options.Scope.Add("user-read-private");
+                options.Scope.Add("user-read-email");
+                options.Scope.Add("streaming");
+                options.Scope.Add("user-modify-playback-state");
+                options.Scope.Add("user-read-playback-state");
                 options.UsePkce = true;
                 options.SaveTokens = false; // Tokens must never be serialized into the browser's auth cookie.
                 options.CorrelationCookie.SameSite = SameSiteMode.Lax;
