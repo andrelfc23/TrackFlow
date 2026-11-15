@@ -24,7 +24,7 @@ public sealed class AuthTests
         Assert.False(status.GetProperty("authenticated").GetBoolean());
         Assert.Equal(JsonValueKind.Null, status.GetProperty("displayName").ValueKind);
         Assert.False(string.IsNullOrEmpty(status.GetProperty("csrfToken").GetString()));
-        Assert.Equal(new[] { "authenticated", "configured", "csrfToken", "displayName" },
+        Assert.Equal(new[] { "authenticated", "configured", "csrfToken", "displayName", "userId" },
             status.EnumerateObject().Select(p => p.Name).Order().ToArray());
         Assert.True(response.Headers.CacheControl?.NoStore);
     }
@@ -114,19 +114,36 @@ public sealed class AuthTests
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/music/token", new { })).StatusCode);
     }
 
-    [Fact]
-    public async Task Search_uses_fixed_filter_and_pagination_and_refreshes_expiring_token()
+    [Theory]
+    [InlineData("rock", 1990, 2026)]
+    [InlineData("pop", 1990, 2026)]
+    [InlineData("metal", 1990, 2026)]
+    [InlineData("hip-hop", 1990, 2026)]
+    [InlineData("r-n-b", 1990, 2026)]
+    [InlineData("indie", 1990, 2026)]
+    [InlineData("pop", 1960, 1969)]
+    [InlineData("indie", 2005, 2005)]
+    public async Task Search_uses_fixed_filter_and_pagination_and_refreshes_expiring_token(string genre, int yearFrom, int yearTo)
     {
         using var factory = new AuthFactory(true);
+        factory.Spotify.ExpectedGenre = genre;
+        factory.Spotify.ExpectedFrom = yearFrom;
+        factory.Spotify.ExpectedTo = yearTo;
         using var client = factory.NewClient();
         await SignIn(client);
-        var response = await client.GetAsync("/api/music/tracks?offset=10");
+        var response = await client.GetAsync("/api/music/tracks?offset=10&genre=" + genre + "&yearFrom=" + yearFrom + "&yearTo=" + yearTo);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var page = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("Test Rock", page.GetProperty("items")[0].GetProperty("title").GetString());
         Assert.Equal(20, page.GetProperty("nextOffset").GetInt32());
+        Assert.Equal(genre, page.GetProperty("genre").GetString());
+        Assert.Equal(yearFrom, page.GetProperty("yearFrom").GetInt32());
+        Assert.Equal(yearTo, page.GetProperty("yearTo").GetInt32());
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/music/tracks")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/music/tracks?genre=pop&yearFrom=2026&yearTo=1960")).StatusCode);
         Assert.Equal(1, factory.Spotify.RefreshCount);
         Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/music/tracks?offset=1001")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/music/tracks?genre=invalid")).StatusCode);
     }
 
     [Fact]
@@ -188,6 +205,9 @@ internal sealed class AuthFactory(bool expireToken = false) : WebApplicationFact
 
 internal sealed class FakeSpotifyHandler(bool expireToken = false) : HttpMessageHandler
 {
+    public string ExpectedGenre { get; set; } = "rock";
+    public int ExpectedFrom { get; set; } = 1990;
+    public int ExpectedTo { get; set; } = 2026;
     public int RefreshCount { get; private set; }
     public int PlayCount { get; private set; }
     protected override async Task<HttpResponseMessage> SendAsync(
@@ -216,7 +236,7 @@ internal sealed class FakeSpotifyHandler(bool expireToken = false) : HttpMessage
         if (request.RequestUri.AbsolutePath == "/v1/search")
         {
             var query = QueryHelpers.ParseQuery(request.RequestUri.Query);
-            Assert.Equal("genre:rock year:1990-2026", query["q"].ToString());
+            Assert.Equal($"genre:{ExpectedGenre} year:{ExpectedFrom}-{ExpectedTo}", query["q"].ToString());
             Assert.Equal("10", query["limit"].ToString());
             Assert.Equal("10", query["offset"].ToString());
             Assert.Equal("refreshed-access", request.Headers.Authorization?.Parameter);

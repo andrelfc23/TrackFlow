@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { notifyLogout } from './sessionEvents'
 
-type Status = { configured: boolean; authenticated: boolean; displayName: string | null; csrfToken: string }
+type Status = { configured: boolean; authenticated: boolean; displayName: string | null; csrfToken: string; userId: string | null }
 const messages: Record<string, string> = {
   failed: 'Spotify-inloggningen avbröts eller misslyckades. Försök igen och kontrollera appens inställningar.',
   'not-configured': 'Spotify-appen behöver konfigureras först. Följ SPOTIFY_SETUP.md i projektmappen.',
@@ -51,3 +51,5 @@ export function useSpotifyAccount() {
 
   return { status, error, busy, notice, wrongHost, logout, retry: () => setAttempt(n => n + 1) }
 }
+
+export type SpotifyAccountState = ReturnType<typeof useSpotifyAccount>

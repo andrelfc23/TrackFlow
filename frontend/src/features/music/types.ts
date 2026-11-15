@@ -9,4 +9,4 @@ export type Player = {
   addListener(event: 'initialization_error' | 'authentication_error' | 'account_error' | 'playback_error' | 'autoplay_failed', callback: (data: { message: string }) => void): void
 }
 
-export type TrackPage = { items: Track[]; nextOffset: number | null }
+export type TrackPage = { genre: string; yearFrom: number; yearTo: number; items: Track[]; nextOffset: number | null }

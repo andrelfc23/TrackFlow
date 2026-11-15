@@ -58,6 +58,7 @@ export function useSpotifyPlayer() {
       const ready = new Promise<void>((resolve, reject) => {
         const timer = window.setTimeout(() => reject(new Error('Spelaren svarade inte. Kontrollera Premium och försök igen.')), 20000)
         p.addListener('ready', () => { clearTimeout(timer); resolve() })
+       
       })
       const connected = p.connect().then(ok => { if (!ok) throw new Error('Kunde inte ansluta Spotify-spelaren.') })
       await Promise.all([ready, connected])

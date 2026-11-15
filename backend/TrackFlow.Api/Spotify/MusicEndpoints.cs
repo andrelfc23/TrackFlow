@@ -17,10 +17,14 @@ internal static class MusicEndpoints
             catch (OperationCanceledException) when (!context.HttpContext.RequestAborted.IsCancellationRequested)
             { return Results.Json(new { error = "Spotify svarade inte i tid." }, statusCode: 504); }
         });
-        group.MapGet("/tracks", async (HttpContext context, SpotifyMusic music, int offset = 0) =>
+        group.MapGet("/tracks", async (HttpContext context, SpotifyMusic music, int offset = 0, string genre = "", int yearFrom = 1990, int yearTo = 2026) =>
         {
+            if (!new[] { "rock", "pop", "metal", "hip-hop", "r-n-b", "indie" }.Contains(genre))
+                return Results.BadRequest(new { error = "Välj en giltig genre." });
+            if (yearFrom < 1960 || yearTo > 2026 || yearFrom > yearTo)
+                return Results.BadRequest(new { error = "Välj år mellan 1960 och 2026." });
             if (offset < 0 || offset > 1000 || offset % 10 != 0) return Results.BadRequest();
-            return Results.Ok(await music.Search(context.User.FindFirstValue("session_id")!, offset, context.RequestAborted));
+            return Results.Ok(await music.Search(context.User.FindFirstValue("session_id")!, offset, context.RequestAborted, genre, yearFrom, yearTo));
         });
         // Only the short-lived access token is exposed, for Spotify's browser SDK.
         group.MapPost("/token", async (HttpContext context, IAntiforgery antiforgery, SpotifyMusic music) =>

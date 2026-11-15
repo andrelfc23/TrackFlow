@@ -41,3 +41,22 @@ access tokens används endast i minnet för SDK; hemligheter hör inte hemma hä
 Kör `npm.cmd run dev` i denna mapp och starta backend separat.
 Öppna http://127.0.0.1:5173. Kör `npm.cmd run lint` och `npm.cmd run build`.
 Riktig uppspelning kräver Spotify Premium och rätt behörigheter.
+
+## Upptäck musik och egna spellistor
+
+Gränssnittet har tre vyer: Upptäck musik, Sökresultat och Mina spellistor.
+Inga genrer är förvalda. Välj en eller flera och välj ett årintervall eller
+flera årtionden mellan 1960 och 2026. Ett specifikt år anges i båda årfälten.
+Sökningen hämtar upp till tio låtar per genre/tidsperiod, blandar resultaten
+och tar bort dubbletter. Ladda fler fortsätter respektive sökning.
+
+Frontend verifierar genre och år i API-svaret. Om den gamla backendprocessen
+fortfarande kör visas en uppmaning att starta om den i stället för fel rockresultat.
+
+Mina spellistor lagras i localStorage, separat per Spotify-användar-ID.
+Det är lokal lagring på samma webbläsarprofil och inte en säker databas:
+andra med åtkomst till profilen kan läsa lagringen. Ingen Spotify-token lagras där.
+Listorna exporteras inte till Spotify och synkas inte mellan enheter.
+Rensad webbplatsdata tar bort listorna. UI stödjer skapa, byta namn, lägga till,
+ta bort låtar och ta bort spellistor. Låtsökning och längdfilter i resultatvyn
+filtrerar bara redan hämtade resultat. Tempo, stämning och popularitet är inte implementerade.

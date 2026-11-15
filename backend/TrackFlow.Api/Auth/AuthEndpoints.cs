@@ -17,7 +17,8 @@ internal static class AuthEndpoints
             return Results.Ok(new AuthStatusResponse(
                 spotify.IsConfigured, signedIn,
                 signedIn ? context.User.Identity!.Name : null,
-                antiforgery.GetAndStoreTokens(context).RequestToken));
+                antiforgery.GetAndStoreTokens(context).RequestToken,
+                signedIn ? context.User.FindFirstValue(ClaimTypes.NameIdentifier) : null));
         });
         endpoints.MapGet("/api/auth/spotify/login", (SpotifyOptions spotify) => spotify.IsConfigured
             ? Results.Challenge(new AuthenticationProperties { RedirectUri = LocalDevelopment.FrontendUrl + "/?spotify=connected" }, ["Spotify"])

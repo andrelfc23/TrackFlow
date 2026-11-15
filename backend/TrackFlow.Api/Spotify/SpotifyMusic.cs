@@ -49,11 +49,11 @@ internal sealed class SpotifyMusic(SpotifySessionStore sessions, IOptionsMonitor
         finally { refreshLock.Release(); }
     }
 
-    public async Task<object> Search(string id, int offset, CancellationToken ct)
+    public async Task<object> Search(string id, int offset, CancellationToken ct, string genre, int yearFrom, int yearTo)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get,
             "https://api.spotify.com/v1/search?type=track&limit=10&offset=" + offset +
-            "&q=" + Uri.EscapeDataString("genre:rock year:1990-2026"));
+            "&q=" + Uri.EscapeDataString($"genre:{genre} year:{yearFrom}-{yearTo}"));
         request.Headers.Authorization = new("Bearer", await Token(id, ct));
         using var response = await Client.SendAsync(request, ct);
         Check(response);
@@ -75,7 +75,7 @@ internal sealed class SpotifyMusic(SpotifySessionStore sessions, IOptionsMonitor
                 playable = !t.TryGetProperty("is_playable", out var playable) || playable.GetBoolean()
             };
         }).ToArray();
-        return new { items, nextOffset = offset + 10 <= 1000 && page.TryGetProperty("next", out var next)
+        return new { genre, yearFrom, yearTo, items, nextOffset = offset + 10 <= 1000 && page.TryGetProperty("next", out var next)
             && next.ValueKind == JsonValueKind.String ? (int?)(offset + 10) : null };
     }
 
