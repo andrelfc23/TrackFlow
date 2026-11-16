@@ -1,11 +1,59 @@
-.login-page { min-height: 100dvh; display: grid; place-items: center; padding: 32px 20px; }
-.login-card { width: 100%; max-width: 540px; padding: clamp(24px, 5vw, 48px); border: 1px solid #344156; border-radius: 24px; background: #142033; box-shadow: 0 24px 80px #0004; }
-.login-card .brand { display: inline-block; margin-bottom: 32px; }
-.login-card h1 { font-size: clamp(28px, 5vw, 38px); line-height: 1.2; margin: 12px 0 20px; }
-.login-card p, .login-card li { line-height: 1.65; color: #c5cfdd; }
-.login-card .primary-button { display: inline-flex; margin: 20px 0; text-decoration: none; }
-.login-help-button { display: block; background: none; border: 0; color: #52e2aa; text-decoration: underline; cursor: pointer; margin: 12px 0; }
-.login-help { padding: 16px; border-radius: 12px; background: #0b1424; }
-.login-help ol { padding-left: 20px; }
-.login-help a { color: #52e2aa; text-decoration: underline; }
-.login-footnote { font-size: 13px; margin-top: 24px; }
+.login-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+}
+.login-card {
+  width: 100%;
+  max-width: 540px;
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid #344156;
+  border-radius: 24px;
+  background: #142033;
+  box-shadow: 0 24px 80px #0004;
+}
+.login-card .brand {
+  display: inline-block;
+  margin-bottom: 32px;
+}
+.login-card h1 {
+  font-size: clamp(28px, 5vw, 38px);
+  line-height: 1.2;
+  margin: 12px 0 20px;
+}
+.login-card p,
+.login-card li {
+  line-height: 1.65;
+  color: #c5cfdd;
+}
+.login-card .primary-button {
+  display: inline-flex;
+  margin: 20px 0;
+  text-decoration: none;
+}
+.login-help-button {
+  display: block;
+  background: none;
+  border: 0;
+  color: #52e2aa;
+  text-decoration: underline;
+  cursor: pointer;
+  margin: 12px 0;
+}
+.login-help {
+  padding: 16px;
+  border-radius: 12px;
+  background: #0b1424;
+}
+.login-help ol {
+  padding-left: 20px;
+}
+.login-help a {
+  color: #52e2aa;
+  text-decoration: underline;
+}
+.login-footnote {
+  font-size: 13px;
+  margin-top: 24px;
+}

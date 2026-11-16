@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -121,6 +121,8 @@ public sealed class AuthTests
     [InlineData("hip-hop", 1990, 2026)]
     [InlineData("r-n-b", 1990, 2026)]
     [InlineData("indie", 1990, 2026)]
+    [InlineData("latin", 1990, 2026)]
+    [InlineData("reggaeton", 1990, 2026)]
     [InlineData("pop", 1960, 1969)]
     [InlineData("indie", 2005, 2005)]
     public async Task Search_uses_fixed_filter_and_pagination_and_refreshes_expiring_token(string genre, int yearFrom, int yearTo)
@@ -257,3 +259,4 @@ internal sealed class FakeSpotifyHandler(bool expireToken = false) : HttpMessage
     private static HttpResponseMessage Json(string body) => new(HttpStatusCode.OK)
     { Content = new StringContent(body, Encoding.UTF8, "application/json") };
 }
+

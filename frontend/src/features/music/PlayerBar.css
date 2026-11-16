@@ -1,0 +1,27 @@
+/* Shared footer size also reserves space for content and the sidebar. */
+.studio { --player-height: 82px; padding-bottom: calc(var(--player-height) + 24px); }
+.studio .studio-sidebar { bottom: var(--player-height); }
+.studio .player {
+  height: var(--player-height);
+  min-height: var(--player-height);
+  box-sizing: border-box;
+  padding: 9px 24px;
+  gap: 24px;
+}
+.studio .player-art { width: 48px; height: 48px; border-radius: 6px; }
+.studio .now-playing strong { font-size: 13px; }
+.studio .now-playing > div > span { font-size: 11px; }
+.studio .round-play { width: 34px; height: 34px; font-size: 15px; }
+.studio .transport { gap: 7px; }
+.studio .timeline { gap: 10px; }
+.studio .timeline span { font-size: 10px; }
+.studio .volume label { font-size: 12px; }
+@media (max-width: 700px) {
+  .studio { --player-height: 74px; }
+  .studio .studio-sidebar { bottom: auto; }
+  .studio .player { padding: 8px 14px; gap: 12px; }
+  .studio .player-art { width: 36px; height: 36px; }
+  .studio .now-playing strong { font-size: 12px; }
+  .studio .now-playing > div > span { font-size: 10px; }
+  .studio .round-play { width: 32px; height: 32px; }
+}

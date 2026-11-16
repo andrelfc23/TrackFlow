@@ -19,7 +19,7 @@ internal static class MusicEndpoints
         });
         group.MapGet("/tracks", async (HttpContext context, SpotifyMusic music, int offset = 0, string genre = "", int yearFrom = 1990, int yearTo = 2026) =>
         {
-            if (!new[] { "rock", "pop", "metal", "hip-hop", "r-n-b", "indie" }.Contains(genre))
+            if (!new[] { "rock", "pop", "metal", "hip-hop", "r-n-b", "indie", "latin", "reggaeton" }.Contains(genre))
                 return Results.BadRequest(new { error = "Välj en giltig genre." });
             if (yearFrom < 1960 || yearTo > 2026 || yearFrom > yearTo)
                 return Results.BadRequest(new { error = "Välj år mellan 1960 och 2026." });
